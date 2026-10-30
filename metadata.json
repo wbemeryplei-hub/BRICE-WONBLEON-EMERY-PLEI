@@ -1,0 +1,6 @@
+{
+  "name": "PORTFOLIO | Brice Emery PLEI - Ingénieur Géomètre - Topographe",
+  "description": "Portfolio officiel et CV de Brice Emery PLEI, Ingénieur Géomètre - Topographe diplômé (UIDT & ESBTP). Expertise LiDAR sur drone DJI M300 RTK, ouvrages d'art, Covadis 17 et SIG.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
