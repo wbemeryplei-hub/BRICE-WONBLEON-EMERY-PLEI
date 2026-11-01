@@ -4,31 +4,41 @@ import { CV_WHATSAPP_URL } from '../utils/downloadCv';
 
 interface NavbarProps {
   onOpenDataCustomizer?: () => void;
+  activeSection?: string;
+  // Backward compatibility props if needed
+  activePageIndex?: number;
+  onNavigateToPage?: (index: number, subTab?: 'experiences' | 'formation') => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenDataCustomizer }) => {
+export const Navbar: React.FC<NavbarProps> = ({ 
+  onOpenDataCustomizer,
+  activeSection = 'accueil',
+  activePageIndex,
+  onNavigateToPage
+}) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Exact navigation items:
   const navLinks = [
-    { label: "Accueil", href: "#accueil" },
-    { label: "À propos", href: "#a-propos" },
-    { label: "Compétences Logicielles", href: "#competences" },
-    { label: "Mes Projets Terrains", href: "#projets" },
-    { label: "Expériences", href: "#experiences" },
-    { label: "Formations", href: "#formations" },
+    { label: "Accueil", href: "#accueil", sectionId: "accueil" },
+    { label: "À propos", href: "#a-propos", sectionId: "a-propos" },
+    { label: "Compétences Logicielles", href: "#competences", sectionId: "competences" },
+    { label: "Mes Projets Terrains", href: "#projets", sectionId: "projets" },
+    { label: "Expériences", href: "#experiences", sectionId: "experiences", subTab: 'experiences' as const },
+    { label: "Formations", href: "#formations", sectionId: "experiences", subTab: 'formation' as const },
   ];
 
-  const handleScrollTo = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handleScrollTo = (
+    e: React.MouseEvent<HTMLAnchorElement>, 
+    href: string, 
+    subTab?: 'experiences' | 'formation'
+  ) => {
     e.preventDefault();
     setMobileMenuOpen(false);
 
-    if (href === '#experiences') {
-      window.dispatchEvent(new CustomEvent('switch-tab', { detail: 'experiences' }));
-      window.history.replaceState(null, '', '#experiences');
-    } else if (href === '#formations') {
-      window.dispatchEvent(new CustomEvent('switch-tab', { detail: 'formation' }));
-      window.history.replaceState(null, '', '#formations');
+    if (subTab) {
+      window.dispatchEvent(new CustomEvent('switch-tab', { detail: subTab }));
+      window.history.replaceState(null, '', href);
     }
 
     const targetId = href === '#formations' ? '#experiences' : href;
@@ -55,17 +65,27 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenDataCustomizer }) => {
           </a>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-xs font-semibold uppercase tracking-wider text-slate-300">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={(e) => handleScrollTo(e, link.href)}
-                className="hover:text-[#D5A33D] transition-colors whitespace-nowrap relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-[#D5A33D] hover:after:w-full after:transition-all"
-              >
-                {link.label}
-              </a>
-            ))}
+          <nav className="hidden lg:flex items-center gap-4 xl:gap-6 text-xs font-semibold uppercase tracking-wider text-slate-300">
+            {navLinks.map((link) => {
+              const isActive = activeSection === link.sectionId;
+              return (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={(e) => handleScrollTo(e, link.href, link.subTab)}
+                  className={`transition-all whitespace-nowrap relative py-1.5 px-2.5 rounded-lg font-mono ${
+                    isActive
+                      ? 'text-[#D5A33D] font-bold bg-white/10 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <span>{link.label}</span>
+                  {isActive && (
+                    <span className="absolute bottom-0 left-2.5 right-2.5 h-[2px] bg-[#D5A33D] rounded-full" />
+                  )}
+                </a>
+              );
+            })}
           </nav>
 
           {/* Right Action Buttons: Télécharger CV (Redirection WhatsApp) + Contact */}
@@ -109,17 +129,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenDataCustomizer }) => {
       {mobileMenuOpen && (
         <div className="lg:hidden border-b border-white/10 bg-[#102B46] px-4 pt-3 pb-6 space-y-4 shadow-2xl">
           <div className="flex flex-col space-y-1">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={(e) => handleScrollTo(e, link.href)}
-                className="px-3.5 py-3 rounded-xl text-sm font-semibold text-slate-200 hover:text-[#D5A33D] hover:bg-white/5 transition-colors flex items-center justify-between border-b border-white/5 last:border-none uppercase tracking-wider"
-              >
-                <span>{link.label}</span>
-                <span className="text-[#D5A33D] font-mono text-xs">→</span>
-              </a>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = activeSection === link.sectionId;
+              return (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={(e) => handleScrollTo(e, link.href, link.subTab)}
+                  className={`px-3.5 py-3 rounded-xl text-sm font-semibold transition-colors flex items-center justify-between border-b border-white/5 last:border-none uppercase tracking-wider ${
+                    isActive ? 'text-[#D5A33D] bg-white/10' : 'text-slate-200 hover:text-[#D5A33D] hover:bg-white/5'
+                  }`}
+                >
+                  <span>{link.label}</span>
+                  <span className="text-[#D5A33D] font-mono text-xs">→</span>
+                </a>
+              );
+            })}
           </div>
 
           <div className="pt-2">

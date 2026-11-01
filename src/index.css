@@ -120,6 +120,15 @@
   background: #D5A33D;
 }
 
+/* Hide scrollbar utility for clean horizontal track */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Mobile viewport touch-friendly enhancements */
 @media (max-width: 640px) {
   .mobile-touch-target {
