@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { ProfileInfo } from '../data/portfolioData';
+import React, { useState, useEffect, useRef } from 'react';
+import { ProfileInfo, terrainPhotos } from '../data/portfolioData';
 import { 
   ArrowRight, 
   MessageCircle,
   ChevronLeft,
   ChevronRight,
-  FileText
+  FileText,
+  Maximize2,
+  X
 } from 'lucide-react';
 import { TopoContours } from './TopoBackground';
 import { CV_WHATSAPP_URL } from '../utils/downloadCv';
@@ -24,6 +26,36 @@ interface HeroSlide {
 export const HeroSection: React.FC<HeroSectionProps> = ({ profile }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [selectedTerrainIndex, setSelectedTerrainIndex] = useState<number | null>(null);
+  const [isMobileMarqueePaused, setIsMobileMarqueePaused] = useState(false);
+
+  // Touch swipe handling for mobile terrain lightbox
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
+  const handleNextTerrain = () => {
+    setSelectedTerrainIndex((prev) => (prev !== null ? (prev + 1) % terrainPhotos.length : null));
+  };
+
+  const handlePrevTerrain = () => {
+    setSelectedTerrainIndex((prev) => (prev !== null ? (prev - 1 + terrainPhotos.length) % terrainPhotos.length : null));
+  };
+
+  // Keyboard navigation for mobile terrain photo viewer
+  useEffect(() => {
+    if (selectedTerrainIndex === null) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') {
+        setSelectedTerrainIndex((prev) => (prev !== null ? (prev + 1) % terrainPhotos.length : null));
+      } else if (e.key === 'ArrowLeft') {
+        setSelectedTerrainIndex((prev) => (prev !== null ? (prev - 1 + terrainPhotos.length) % terrainPhotos.length : null));
+      } else if (e.key === 'Escape') {
+        setSelectedTerrainIndex(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedTerrainIndex]);
 
   // Exact 06 photos as requested:
   const heroSlides: HeroSlide[] = [
@@ -204,6 +236,62 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ profile }) => {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="lg:col-span-7 space-y-4 sm:space-y-6 lg:space-y-8"
           >
+            {/* BANDEAU DÉFILANT D'IMMERSION TERRAIN (AFFICHE JUSTE AVANT LE TITRE UNIQUEMENT EN MODE MOBILE) */}
+            <div className="lg:hidden w-full pb-1 pt-1">
+              <div className="flex items-center justify-between gap-2 mb-2 px-0.5">
+                <div className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#D5A33D] bg-white/[0.08] px-2.5 py-1 rounded-full border border-white/15 shadow-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D5A33D] animate-pulse" />
+                  <span>Immersion Terrain & Réalité Chantier</span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {terrainPhotos.length} photos
+                </span>
+              </div>
+
+              {/* Ruban horizontal défilant en continu */}
+              <div 
+                className="relative w-full overflow-hidden rounded-xl bg-[#0B1E31]/90 border border-white/15 p-1.5 shadow-lg select-none"
+                onTouchStart={() => setIsMobileMarqueePaused(true)}
+                onTouchEnd={() => setIsMobileMarqueePaused(false)}
+                onMouseEnter={() => setIsMobileMarqueePaused(true)}
+                onMouseLeave={() => setIsMobileMarqueePaused(false)}
+              >
+                {/* Dégradés d'atténuation sur les côtés gauche et droit */}
+                <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-[#0B1E31] to-transparent z-10 pointer-events-none rounded-l-xl" />
+                <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-[#0B1E31] to-transparent z-10 pointer-events-none rounded-r-xl" />
+
+                <div 
+                  className={`flex gap-2 w-max ${isMobileMarqueePaused ? '' : 'animate-marquee'}`}
+                  style={{ willChange: 'transform' }}
+                >
+                  {[...terrainPhotos, ...terrainPhotos].map((photo, pIdx) => {
+                    const originalIdx = pIdx % terrainPhotos.length;
+                    return (
+                      <button
+                        key={`hero-mob-terrain-${photo.id}-${pIdx}`}
+                        type="button"
+                        onClick={() => setSelectedTerrainIndex(originalIdx)}
+                        className="group relative w-[105px] xs:w-[120px] aspect-[4/3] rounded-lg overflow-hidden bg-slate-900 border border-white/15 active:border-[#D5A33D] shadow-xs shrink-0 cursor-pointer transition-transform active:scale-95"
+                        title={photo.title}
+                        aria-label={photo.title}
+                      >
+                        <img 
+                          src={photo.imageUrl}
+                          alt={photo.title}
+                          className="w-full h-full object-cover object-center pointer-events-none select-none transition-transform duration-300 group-hover:scale-105"
+                          loading="eager"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <Maximize2 className="w-3.5 h-3.5 text-[#D5A33D]" />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
             {/* Main Title */}
             <div className="space-y-2 sm:space-y-3">
               <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tight text-white font-heading leading-[1.12]">
@@ -267,6 +355,133 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ profile }) => {
 
         </div>
       </div>
+
+      {/* Lightbox Modal: Visionneuse plein écran pour les photos d'immersion terrain */}
+      <AnimatePresence>
+        {selectedTerrainIndex !== null && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-between p-3 sm:p-5 bg-black/95 backdrop-blur-md select-none"
+            onClick={() => setSelectedTerrainIndex(null)}
+            role="dialog"
+            aria-modal="true"
+          >
+            {/* Top Bar with Counter and Close Button */}
+            <div 
+              className="w-full max-w-5xl flex items-center justify-between z-30 pb-2 border-b border-white/10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="px-3 py-1 rounded-full bg-[#102B46] border border-[#D5A33D]/40 text-[#D5A33D] text-xs font-mono font-bold">
+                  Photo {selectedTerrainIndex + 1} / {terrainPhotos.length}
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-white truncate max-w-[200px] xs:max-w-xs sm:max-w-md">
+                  {terrainPhotos[selectedTerrainIndex].title}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedTerrainIndex(null)}
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer border border-white/20"
+                title="Fermer (Échap)"
+                aria-label="Fermer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Central Photo with Left and Right Arrows */}
+            <div 
+              className="relative w-full max-w-5xl flex-1 flex items-center justify-center my-auto min-h-0"
+              onClick={(e) => e.stopPropagation()}
+              onTouchStart={(e) => {
+                touchStartX.current = e.targetTouches[0].clientX;
+                touchEndX.current = null;
+              }}
+              onTouchMove={(e) => {
+                touchEndX.current = e.targetTouches[0].clientX;
+              }}
+              onTouchEnd={() => {
+                if (touchStartX.current === null || touchEndX.current === null) return;
+                const diff = touchStartX.current - touchEndX.current;
+                if (diff > 45) handleNextTerrain();
+                else if (diff < -45) handlePrevTerrain();
+                touchStartX.current = null;
+                touchEndX.current = null;
+              }}
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrevTerrain();
+                }}
+                className="absolute left-1 sm:left-3 z-30 p-2.5 sm:p-3 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/25 hover:border-[#D5A33D] shadow-2xl transition-all cursor-pointer hover:scale-110 active:scale-95"
+                title="Photo précédente (Flèche Gauche)"
+                aria-label="Photo précédente"
+              >
+                <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-[#D5A33D]" />
+              </button>
+
+              <div className="relative max-h-[75vh] max-w-full flex items-center justify-center overflow-hidden rounded-2xl shadow-2xl bg-black/40 border border-white/10">
+                <img
+                  key={terrainPhotos[selectedTerrainIndex].id}
+                  src={terrainPhotos[selectedTerrainIndex].imageUrl}
+                  alt={terrainPhotos[selectedTerrainIndex].title}
+                  className="max-h-[74vh] w-auto max-w-full object-contain rounded-xl"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNextTerrain();
+                }}
+                className="absolute right-1 sm:right-3 z-30 p-2.5 sm:p-3 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/25 hover:border-[#D5A33D] shadow-2xl transition-all cursor-pointer hover:scale-110 active:scale-95"
+                title="Photo suivante (Flèche Droite)"
+                aria-label="Photo suivante"
+              >
+                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-[#D5A33D]" />
+              </button>
+            </div>
+
+            {/* Bottom thumbnail strip */}
+            <div 
+              className="w-full max-w-4xl z-30 pt-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-center gap-1.5 overflow-x-auto py-1 px-2 no-scrollbar max-w-full">
+                {terrainPhotos.map((photo, idx) => (
+                  <button
+                    key={`hero-thumb-${photo.id}`}
+                    type="button"
+                    onClick={() => setSelectedTerrainIndex(idx)}
+                    className={`relative w-11 sm:w-14 h-8 sm:h-10 rounded-md overflow-hidden flex-shrink-0 transition-all cursor-pointer border ${
+                      selectedTerrainIndex === idx
+                        ? 'border-[#D5A33D] ring-2 ring-[#D5A33D]/50 scale-105'
+                        : 'border-white/20 opacity-50 hover:opacity-90'
+                    }`}
+                    title={photo.title}
+                  >
+                    <img
+                      src={photo.imageUrl}
+                      alt={photo.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };
