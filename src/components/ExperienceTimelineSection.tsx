@@ -21,6 +21,9 @@ import {
   HardHat,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
   X
 } from 'lucide-react';
 import { TopoContours } from './TopoBackground';
@@ -29,7 +32,9 @@ export const ExperienceTimelineSection: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'experiences' | 'formation'>('experiences');
   const [expFilter, setExpFilter] = useState<'all' | 'pfe' | 'universitaire' | 'professionnel'>('all');
   const [expandedCurriculumIdx, setExpandedCurriculumIdx] = useState<number | null>(0); // Master M1/M2 expanded by default
-  const [selectedPfePhoto, setSelectedPfePhoto] = useState<{ src: string; title: string; description: string } | null>(null);
+  const [pfePhotoIndex, setPfePhotoIndex] = useState<number>(0);
+  const [isPfeCarouselPaused, setIsPfeCarouselPaused] = useState<boolean>(false);
+  const [lightboxPhotoIndex, setLightboxPhotoIndex] = useState<number | null>(null);
 
   const pfeFieldPhotos = [
     {
@@ -53,6 +58,31 @@ export const ExperienceTimelineSection: React.FC = () => {
       description: 'Préparation de la mission de vol avec véhicule d’intervention tout-terrain et canne topographique'
     }
   ];
+
+  // Défilement automatique des photos du PFE (toutes les 3,2 secondes)
+  useEffect(() => {
+    if (isPfeCarouselPaused || lightboxPhotoIndex !== null) return;
+    const interval = setInterval(() => {
+      setPfePhotoIndex((prev) => (prev + 1) % pfeFieldPhotos.length);
+    }, 3200);
+    return () => clearInterval(interval);
+  }, [isPfeCarouselPaused, lightboxPhotoIndex, pfeFieldPhotos.length]);
+
+  // Navigation clavier pour la visionneuse plein écran (Flèche gauche / droite et Échap)
+  useEffect(() => {
+    if (lightboxPhotoIndex === null) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') {
+        setLightboxPhotoIndex((prev) => (prev !== null ? (prev + 1) % pfeFieldPhotos.length : 0));
+      } else if (e.key === 'ArrowLeft') {
+        setLightboxPhotoIndex((prev) => (prev !== null ? (prev - 1 + pfeFieldPhotos.length) % pfeFieldPhotos.length : 0));
+      } else if (e.key === 'Escape') {
+        setLightboxPhotoIndex(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxPhotoIndex, pfeFieldPhotos.length]);
 
   useEffect(() => {
     // Listen to hash changes (#formations or #experiences)
@@ -116,9 +146,6 @@ export const ExperienceTimelineSection: React.FC = () => {
             Expériences et Formation
           </h2>
           
-          <p className="text-sm text-slate-600 max-w-2xl mx-auto font-medium">
-            Projet de fin d'études LiDAR de haute précision, projets universitaires d'ouvrages d'art et d'aménagement urbain, et missions professionnelles de terrain en Côte d'Ivoire et au Sénégal.
-          </p>
           <div className="w-16 h-1 bg-[#D5A33D] mx-auto rounded-full" />
         </div>
 
@@ -286,34 +313,147 @@ export const ExperienceTimelineSection: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Photos réelles du terrain - PFE */}
+                      {/* Photos réelles du terrain - PFE (Défilement interactif & automatique) */}
                       <div className="pt-4 border-t border-amber-200/80 space-y-3">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                          <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-950 block">
-                            Photos de terrain & opérations d'acquisition réelles (PFE) :
+                          <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                            <span>Photos de terrain & opérations réelles (PFE) :</span>
                           </span>
                           <span className="text-[11px] font-mono text-amber-800">
-                            (Cliquez pour agrandir les photos)
+                            (Défilement automatique · Cliquez pour agrandir et naviguer)
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          {pfeFieldPhotos.map((photo, pIdx) => (
+                        {/* Grand carrousel avec défilement automatique & contrôles manuels */}
+                        <div 
+                          className="relative rounded-2xl overflow-hidden border-2 border-amber-300 bg-slate-950 shadow-md group select-none"
+                          onMouseEnter={() => setIsPfeCarouselPaused(true)}
+                          onMouseLeave={() => setIsPfeCarouselPaused(false)}
+                          onTouchStart={() => setIsPfeCarouselPaused(true)}
+                          onTouchEnd={() => setIsPfeCarouselPaused(false)}
+                        >
+                          {/* Image principale cliquable pour ouvrir la visionneuse */}
+                          <div 
+                            className="aspect-[16/9] sm:aspect-[21/9] w-full overflow-hidden relative cursor-pointer"
+                            onClick={() => setLightboxPhotoIndex(pfePhotoIndex)}
+                            title="Cliquer pour agrandir en plein écran"
+                          >
+                            <img 
+                              src={pfeFieldPhotos[pfePhotoIndex].src} 
+                              alt={`Photo terrain PFE ${pfePhotoIndex + 1}`}
+                              className="w-full h-full object-cover object-center group-hover:scale-102 transition-transform duration-500"
+                              loading="lazy"
+                            />
+
+                            {/* Dégradé d'ombre pour lisibilité */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30 pointer-events-none" />
+
+                            {/* Badge compteur & titre */}
+                            <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 right-14 sm:right-20 pointer-events-none text-white space-y-0.5">
+                              <span className="inline-block px-2 py-0.5 rounded-md bg-[#D5A33D] text-[#102B46] font-mono font-bold text-[10px] sm:text-xs">
+                                Photo {pfePhotoIndex + 1} / {pfeFieldPhotos.length}
+                              </span>
+                              <p className="text-xs sm:text-sm font-bold text-white truncate drop-shadow-sm">
+                                {pfeFieldPhotos[pfePhotoIndex].title}
+                              </p>
+                            </div>
+
+                            {/* Bouton d'agrandissement en haut à droite */}
                             <button
-                              key={`pfe-photo-${pIdx}`}
                               type="button"
-                              onClick={() => setSelectedPfePhoto(photo)}
-                              className="group relative rounded-xl overflow-hidden border-2 border-amber-200/90 hover:border-amber-500 shadow-sm transition-all text-left bg-slate-900 aspect-4/3 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500"
-                              title="Cliquer pour afficher la photo"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLightboxPhotoIndex(pfePhotoIndex);
+                              }}
+                              className="absolute top-3 right-3 p-2 rounded-xl bg-black/60 hover:bg-black/85 text-white border border-white/20 transition-all cursor-pointer backdrop-blur-xs shadow-lg hover:scale-105"
+                              title="Agrandir en plein écran"
+                              aria-label="Agrandir en plein écran"
                             >
-                              <img 
-                                src={photo.src} 
-                                alt={`Photo terrain PFE ${pIdx + 1}`}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                loading="lazy"
-                              />
+                              <Maximize2 className="w-4 h-4 text-[#D5A33D]" />
                             </button>
-                          ))}
+                          </div>
+
+                          {/* Bouton précédent */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPfePhotoIndex((prev) => (prev - 1 + pfeFieldPhotos.length) % pfeFieldPhotos.length);
+                            }}
+                            className="absolute left-2.5 top-1/2 -translate-y-1/2 p-2 sm:p-2.5 rounded-full bg-black/65 hover:bg-black/90 text-white border border-white/20 transition-all cursor-pointer hover:scale-110 shadow-lg"
+                            title="Photo précédente"
+                            aria-label="Photo précédente"
+                          >
+                            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-[#D5A33D]" />
+                          </button>
+
+                          {/* Bouton suivant */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPfePhotoIndex((prev) => (prev + 1) % pfeFieldPhotos.length);
+                            }}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 sm:p-2.5 rounded-full bg-black/65 hover:bg-black/90 text-white border border-white/20 transition-all cursor-pointer hover:scale-110 shadow-lg"
+                            title="Photo suivante"
+                            aria-label="Photo suivante"
+                          >
+                            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-[#D5A33D]" />
+                          </button>
+
+                          {/* Puces de navigation */}
+                          <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs border border-white/15">
+                            {pfeFieldPhotos.map((_, dotIdx) => (
+                              <button
+                                key={`pfe-dot-${dotIdx}`}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPfePhotoIndex(dotIdx);
+                                }}
+                                className={`transition-all rounded-full cursor-pointer ${
+                                  pfePhotoIndex === dotIdx 
+                                    ? 'w-5 h-2 bg-[#D5A33D]' 
+                                    : 'w-2 h-2 bg-white/40 hover:bg-white/70'
+                                }`}
+                                title={`Afficher photo ${dotIdx + 1}`}
+                                aria-label={`Afficher photo ${dotIdx + 1}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Rangée de miniatures interactives cliquables */}
+                        <div className="grid grid-cols-4 gap-2 pt-1">
+                          {pfeFieldPhotos.map((photo, pIdx) => {
+                            const isCurrent = pfePhotoIndex === pIdx;
+                            return (
+                              <button
+                                key={`pfe-thumb-${pIdx}`}
+                                type="button"
+                                onClick={() => {
+                                  setPfePhotoIndex(pIdx);
+                                  setLightboxPhotoIndex(pIdx);
+                                }}
+                                className={`group relative rounded-xl overflow-hidden border-2 transition-all text-left bg-slate-900 aspect-[4/3] cursor-pointer ${
+                                  isCurrent
+                                    ? 'border-[#D5A33D] ring-2 ring-[#D5A33D]/40 scale-[1.02]'
+                                    : 'border-amber-200/80 hover:border-amber-400 opacity-75 hover:opacity-100'
+                                }`}
+                                title={`Cliquer pour voir : ${photo.title}`}
+                              >
+                                <img 
+                                  src={photo.src} 
+                                  alt={`Miniature PFE ${pIdx + 1}`}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  loading="lazy"
+                                />
+                                <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/70 font-mono text-[9px] text-[#D5A33D] font-bold">
+                                  {pIdx + 1}/4
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -590,35 +730,105 @@ export const ExperienceTimelineSection: React.FC = () => {
 
       </div>
 
-      {/* Lightbox Modal for PFE Field Photos (pure photo sans titre ni description) */}
-      {selectedPfePhoto && (
+      {/* Lightbox Modal interactive avec défilement suivant/précédent pour les photos du PFE */}
+      {lightboxPhotoIndex !== null && (
         <div 
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-6"
-          onClick={() => setSelectedPfePhoto(null)}
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between p-3 sm:p-6"
+          onClick={() => setLightboxPhotoIndex(null)}
         >
+          {/* Barre supérieure : Compteur, Titre & Bouton Fermer */}
           <div 
-            className="relative max-w-5xl w-full flex flex-col items-center justify-center"
+            className="w-full max-w-6xl mx-auto flex items-center justify-between gap-4 text-white pb-3 border-b border-white/10 shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button top right */}
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-[#D5A33D] text-[#102B46]">
+                Photo {lightboxPhotoIndex + 1} / {pfeFieldPhotos.length}
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-slate-200 truncate max-w-[200px] xs:max-w-xs sm:max-w-md">
+                {pfeFieldPhotos[lightboxPhotoIndex].title}
+              </span>
+            </div>
+
             <button
               type="button"
-              onClick={() => setSelectedPfePhoto(null)}
-              className="absolute -top-12 right-0 p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer"
-              title="Fermer"
+              onClick={() => setLightboxPhotoIndex(null)}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+              title="Fermer la visionneuse (Échap)"
+              aria-label="Fermer"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+          </div>
+
+          {/* Zone centrale : Image avec boutons Précédent & Suivant */}
+          <div 
+            className="relative flex-1 w-full max-w-6xl mx-auto flex items-center justify-center my-2 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Bouton Défilement Précédent */}
+            <button
+              type="button"
+              onClick={() => setLightboxPhotoIndex((prev) => (prev !== null ? (prev - 1 + pfeFieldPhotos.length) % pfeFieldPhotos.length : 0))}
+              className="absolute left-1 sm:left-4 z-20 p-2.5 sm:p-3.5 rounded-full bg-black/70 hover:bg-black/95 text-white border border-white/20 hover:scale-110 transition-all cursor-pointer shadow-2xl"
+              title="Photo précédente (Flèche gauche)"
+              aria-label="Photo précédente"
+            >
+              <ChevronLeft className="w-5 h-5 sm:w-7 sm:h-7 text-[#D5A33D]" />
             </button>
 
-            {/* Photo display */}
-            <div className="max-h-[85vh] max-w-full flex items-center justify-center rounded-2xl overflow-hidden border border-white/20 shadow-2xl bg-black">
+            {/* Photo affichée */}
+            <div className="max-h-[72vh] max-w-full flex items-center justify-center rounded-2xl overflow-hidden border border-white/20 shadow-2xl bg-black">
               <img 
-                src={selectedPfePhoto.src} 
-                alt="Photo terrain PFE"
-                className="max-h-[82vh] w-auto max-w-full object-contain"
+                key={pfeFieldPhotos[lightboxPhotoIndex].src}
+                src={pfeFieldPhotos[lightboxPhotoIndex].src} 
+                alt={pfeFieldPhotos[lightboxPhotoIndex].title}
+                className="max-h-[70vh] w-auto max-w-full object-contain select-none"
               />
+            </div>
+
+            {/* Bouton Défilement Suivant */}
+            <button
+              type="button"
+              onClick={() => setLightboxPhotoIndex((prev) => (prev !== null ? (prev + 1) % pfeFieldPhotos.length : 0))}
+              className="absolute right-1 sm:right-4 z-20 p-2.5 sm:p-3.5 rounded-full bg-black/70 hover:bg-black/95 text-white border border-white/20 hover:scale-110 transition-all cursor-pointer shadow-2xl"
+              title="Photo suivante (Flèche droite)"
+              aria-label="Photo suivante"
+            >
+              <ChevronRight className="w-5 h-5 sm:w-7 sm:h-7 text-[#D5A33D]" />
+            </button>
+          </div>
+
+          {/* Barre inférieure : Miniatures cliquables pour défiler directement */}
+          <div 
+            className="w-full max-w-md mx-auto pt-2 shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="grid grid-cols-4 gap-2 p-1.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15">
+              {pfeFieldPhotos.map((photo, thumbIdx) => {
+                const isActive = lightboxPhotoIndex === thumbIdx;
+                return (
+                  <button
+                    key={`modal-thumb-${thumbIdx}`}
+                    type="button"
+                    onClick={() => setLightboxPhotoIndex(thumbIdx)}
+                    className={`relative rounded-xl overflow-hidden aspect-[4/3] border-2 transition-all cursor-pointer ${
+                      isActive 
+                        ? 'border-[#D5A33D] ring-2 ring-[#D5A33D]/60 scale-105' 
+                        : 'border-transparent opacity-60 hover:opacity-100'
+                    }`}
+                    title={photo.title}
+                  >
+                    <img 
+                      src={photo.src} 
+                      alt={`Miniature ${thumbIdx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
