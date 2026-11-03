@@ -237,18 +237,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ profile }) => {
             className="lg:col-span-7 space-y-4 sm:space-y-6 lg:space-y-8"
           >
             {/* BANDEAU DÉFILANT D'IMMERSION TERRAIN (AFFICHE JUSTE AVANT LE TITRE UNIQUEMENT EN MODE MOBILE) */}
-            <div className="lg:hidden w-full pb-1 pt-1">
-              <div className="flex items-center justify-between gap-2 mb-2 px-0.5">
-                <div className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#D5A33D] bg-white/[0.08] px-2.5 py-1 rounded-full border border-white/15 shadow-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#D5A33D] animate-pulse" />
-                  <span>Immersion Terrain & Réalité Chantier</span>
-                </div>
-                <span className="text-[10px] font-mono text-slate-400">
-                  {terrainPhotos.length} photos
-                </span>
-              </div>
-
-              {/* Ruban horizontal défilant en continu */}
+            <div className="lg:hidden w-full pb-1 pt-0">
+              {/* Ruban horizontal défilant en continu sans titre */}
               <div 
                 className="relative w-full overflow-hidden rounded-xl bg-[#0B1E31]/90 border border-white/15 p-1.5 shadow-lg select-none"
                 onTouchStart={() => setIsMobileMarqueePaused(true)}
@@ -377,9 +367,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ profile }) => {
               <div className="flex items-center gap-2.5">
                 <span className="px-3 py-1 rounded-full bg-[#102B46] border border-[#D5A33D]/40 text-[#D5A33D] text-xs font-mono font-bold">
                   Photo {selectedTerrainIndex + 1} / {terrainPhotos.length}
-                </span>
-                <span className="text-xs sm:text-sm font-bold text-white truncate max-w-[200px] xs:max-w-xs sm:max-w-md">
-                  {terrainPhotos[selectedTerrainIndex].title}
                 </span>
               </div>
 
