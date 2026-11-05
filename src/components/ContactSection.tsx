@@ -11,7 +11,11 @@ import {
   Compass, 
   PhoneCall,
   Info,
-  ArrowRight
+  ArrowRight,
+  ExternalLink,
+  AlertCircle,
+  Sparkles,
+  Check
 } from 'lucide-react';
 import { TopoContours } from './TopoBackground';
 
@@ -29,6 +33,47 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ profile }) => {
 
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deliveryStatus, setDeliveryStatus] = useState<'success' | 'activation_needed' | 'network_fallback'>('success');
+
+  const recipientEmail = "wbemery.plei@univ-thies.sn";
+  const backupEmail = "emeybriceplei01@gmail.com";
+
+  // Liens d'envoi direct pré-remplis
+  const generateEmailSubject = () => `Message Portefolio Brice Emery PLEI — ${formData.name || 'Contact Professionnel'}`;
+  
+  const generateEmailBody = () => 
+    `Bonjour Brice Emery PLEI,\n\n` +
+    `Je vous contacte suite à la consultation de votre portefolio officiel d'ingénieur géomètre topographe :\n\n` +
+    `👤 Nom / Organisation : ${formData.name || 'Non renseigné'}\n` +
+    `✉️ Adresse E-mail : ${formData.email || 'Non renseignée'}\n` +
+    `📞 Téléphone / WhatsApp : ${formData.phone || 'Non renseigné'}\n\n` +
+    `💬 Message :\n${formData.message || 'Bonjour, je souhaite échanger avec vous au sujet d\'une opportunité ou mission.'}\n\n` +
+    `-----------------------------------------\n` +
+    `Destinataires officiels : ${recipientEmail} et ${backupEmail}\n` +
+    `Date : ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`;
+
+  const getGmailWebUrl = () => {
+    const subject = encodeURIComponent(generateEmailSubject());
+    const body = encodeURIComponent(generateEmailBody());
+    return `https://mail.google.com/mail/?view=cm&fs=1&to=${recipientEmail}&cc=${backupEmail}&su=${subject}&body=${body}`;
+  };
+
+  const getMailtoUrl = () => {
+    const subject = encodeURIComponent(generateEmailSubject());
+    const body = encodeURIComponent(generateEmailBody());
+    return `mailto:${recipientEmail}?cc=${backupEmail}&subject=${subject}&body=${body}`;
+  };
+
+  const getWhatsAppUrl = () => {
+    const text = encodeURIComponent(
+      `*Nouveau message depuis le Portefolio*\n\n` +
+      `*Nom :* ${formData.name || 'Visiteur'}\n` +
+      `*E-mail :* ${formData.email || 'Non renseigné'}\n` +
+      `*Téléphone :* ${formData.phone || 'Non renseigné'}\n\n` +
+      `*Message :*\n${formData.message}`
+    );
+    return `https://wa.me/221787813272?text=${text}`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,49 +81,72 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ profile }) => {
 
     setLoading(true);
 
-    const recipientEmail = "wbemery.plei@univ-thies.sn";
-    const secondaryEmail = "emeybriceplei01@gmail.com";
-    const emailSubject = `Message Portefolio Brice Emery PLEI — ${formData.name}`;
-    const emailBody = 
-      `Bonjour Brice Emery PLEI,\n\n` +
-      `Vous avez reçu un nouveau message direct depuis votre portefolio officiel :\n\n` +
-      `👤 Nom / Organisation : ${formData.name}\n` +
-      `✉️ Adresse E-mail : ${formData.email || 'Non renseignée'}\n` +
-      `📞 Téléphone / Contact : ${formData.phone || 'Non renseigné'}\n\n` +
-      `💬 Message :\n${formData.message}\n\n` +
-      `-----------------------------------------\n` +
-      `Destinataire officiel : ${recipientEmail}\n` +
-      `Date : ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`;
+    const emailSubject = generateEmailSubject();
 
-    const mailtoUrl = `mailto:${recipientEmail}?cc=${secondaryEmail}&subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+    const payload = {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone || 'Non renseigne',
+      message: formData.message,
+      _subject: emailSubject,
+      _replyto: formData.email,
+      _captcha: 'false',
+      _template: 'table',
+      _cc: `${recipientEmail},${backupEmail}`
+    };
+
+    let sentSuccessfully = false;
 
     try {
-      // Envoi direct vers la boîte mail officielle
-      await fetch(`https://formsubmit.co/ajax/${recipientEmail}`, {
+      // 1. Envoi prioritaire vers le compte Gmail (taux de délivrabilité maximal) avec CC vers l'université
+      const resGmail = await fetch(`https://formsubmit.co/ajax/${backupEmail}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email || 'contact-portfolio@brice-emery.com',
-          phone: formData.phone || 'N/A',
-          message: formData.message,
-          _subject: emailSubject,
-          _replyto: formData.email || undefined,
-          _cc: secondaryEmail
-        })
+        body: JSON.stringify(payload)
       });
+
+      if (resGmail.ok) {
+        const data = await resGmail.json();
+        if (data.success === 'true' || data.success === true) {
+          sentSuccessfully = true;
+          setDeliveryStatus('success');
+        } else if (data.message && typeof data.message === 'string' && data.message.toLowerCase().includes('activate')) {
+          setDeliveryStatus('activation_needed');
+        }
+      }
     } catch {
-      // En cas de restriction réseau, le mailto prend le relais
+      // En cas d'adblocker ou de blocage réseau
     }
 
-    // Déclenche également le client mail
-    try {
-      window.location.href = mailtoUrl;
-    } catch {
-      // Ignorer
+    if (!sentSuccessfully) {
+      try {
+        // 2. Tentative vers l'adresse institutionnelle
+        const resUniv = await fetch(`https://formsubmit.co/ajax/${recipientEmail}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (resUniv.ok) {
+          const data = await resUniv.json();
+          if (data.success === 'true' || data.success === true) {
+            sentSuccessfully = true;
+            setDeliveryStatus('success');
+          } else if (data.message && typeof data.message === 'string' && data.message.toLowerCase().includes('activate')) {
+            setDeliveryStatus('activation_needed');
+          }
+        } else {
+          setDeliveryStatus('network_fallback');
+        }
+      } catch {
+        setDeliveryStatus('network_fallback');
+      }
     }
 
     setLoading(false);
@@ -162,14 +230,22 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ profile }) => {
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2 text-slate-400">
                     <Mail className="w-3.5 h-3.5 text-[#D5A33D]" />
-                    <span className="uppercase tracking-wider">Adresse E-mail :</span>
+                    <span className="uppercase tracking-wider">Boîtes E-mail directes :</span>
                   </div>
-                  <div className="pl-5 space-y-1">
+                  <div className="pl-5 space-y-1.5">
                     <a 
-                      href={`mailto:${profile.email}`} 
+                      href={`mailto:${recipientEmail}`} 
                       className="block text-slate-200 hover:text-[#D5A33D] transition-colors truncate"
+                      title="Écrire à l'adresse institutionnelle"
                     >
-                      {profile.email}
+                      Institutionnelle : <strong>{recipientEmail}</strong>
+                    </a>
+                    <a 
+                      href={`mailto:${backupEmail}`} 
+                      className="block text-slate-200 hover:text-[#D5A33D] transition-colors truncate"
+                      title="Écrire à l'adresse Gmail"
+                    >
+                      Gmail directe : <strong>{backupEmail}</strong>
                     </a>
                   </div>
                 </div>
@@ -217,48 +293,96 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ profile }) => {
               
               <div className="space-y-1">
                 <h3 className="text-xl font-bold text-[#102B46] font-heading">
-                  Envoyer un message
+                  Envoyer un message dans ma boîte mail
                 </h3>
                 <p className="text-xs text-slate-500 font-mono">
-                  Remplissez le formulaire ci-dessous pour toute proposition de mission ou de poste.
+                  Les messages sont acheminés directement à mes deux adresses : <strong>{recipientEmail}</strong> et <strong>{backupEmail}</strong>.
                 </p>
               </div>
 
               {submitted ? (
-                <div className="p-6 sm:p-7 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-4 animate-fade-in">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-sm">
-                    <CheckCircle2 className="w-6 h-6" />
-                  </div>
-                  <div className="space-y-1">
+                <div className="p-6 sm:p-7 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-5 animate-fade-in">
+                  <div className="text-center space-y-2">
+                    <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-sm">
+                      <CheckCircle2 className="w-6 h-6" />
+                    </div>
                     <h4 className="text-base sm:text-lg font-bold text-emerald-950 font-heading">
-                      Message transmis par E-mail !
+                      Message enregistré & transmis !
                     </h4>
                     <p className="text-xs text-emerald-800 leading-relaxed max-w-md mx-auto">
-                      Votre message a été envoyé à mon adresse institutionnelle officielle : <strong>wbemery.plei@univ-thies.sn</strong>. Je vous répondrai dans les meilleurs délais.
+                      Votre message a été transmis vers mes adresses de réception : <strong>{recipientEmail}</strong> et <strong>{backupEmail}</strong>.
                     </p>
                   </div>
 
-                  {/* Bouton de confirmation E-mail */}
-                  <div className="pt-2 max-w-xs mx-auto">
+                  {/* Options de garantie d'envoi immédiat 1-clic */}
+                  <div className="p-4 rounded-xl bg-white border border-emerald-200 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#102B46] uppercase tracking-wider">
+                      <Sparkles className="w-4 h-4 text-[#D5A33D]" />
+                      <span>Garantir la réception immédiate en 1 clic :</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {/* Option 1: Ouvrir dans Gmail Web pré-rempli */}
+                      <a
+                        href={getGmailWebUrl()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#EA4335] hover:bg-[#d33426] text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors shadow-xs"
+                        title="Ouvrir dans Gmail avec votre message déjà rédigé"
+                      >
+                        <Mail className="w-4 h-4" />
+                        <span>Ouvrir dans Gmail</span>
+                        <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                      </a>
+
+                      {/* Option 2: Transmettre sur WhatsApp */}
+                      <a
+                        href={getWhatsAppUrl()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors shadow-xs"
+                        title="Transmettre le message sur WhatsApp"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        <span>Envoyer par WhatsApp</span>
+                        <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                      </a>
+                    </div>
+
+                    {/* Option 3: Client Mail Local */}
                     <a
-                      href={`mailto:wbemery.plei@univ-thies.sn?cc=emeybriceplei01@gmail.com&subject=${encodeURIComponent(`Message Portefolio — ${formData.name}`)}&body=${encodeURIComponent(`Bonjour Brice Emery PLEI,\n\nNom : ${formData.name}\nEmail : ${formData.email}\nTéléphone : ${formData.phone}\n\nMessage :\n${formData.message}`)}`}
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#102B46] hover:bg-[#163a5e] text-[#D5A33D] text-xs font-mono font-bold uppercase tracking-wider transition-colors shadow-xs"
+                      href={getMailtoUrl()}
+                      className="w-full inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#102B46] text-xs font-mono font-semibold transition-colors"
+                      title="Ouvrir dans votre logiciel de messagerie par défaut (Outlook, Apple Mail...)"
                     >
-                      <Mail className="w-4 h-4" />
-                      <span>Ouvrir dans mon client Mail</span>
+                      <Send className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Ouvrir dans mon logiciel Mail local</span>
                     </a>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSubmitted(false);
-                      setFormData({ name: '', email: '', phone: '', message: '' });
-                    }}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-mono font-bold text-slate-500 hover:text-slate-800 uppercase tracking-wider cursor-pointer mt-1"
-                  >
-                    Envoyer un autre message
-                  </button>
+                  {/* Consigne pour le propriétaire du portfolio */}
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-mono text-amber-900 space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                      <span>Information pour Brice Emery PLEI :</span>
+                    </div>
+                    <p className="leading-relaxed">
+                      Si c'est le tout premier message, vérifiez vos dossiers <strong>Spams / Courriers indésirables</strong> sur <strong>{backupEmail}</strong> ou <strong>{recipientEmail}</strong> et cliquez sur <em>« Activate Form »</em> pour valider définitivement la réception automatique.
+                    </p>
+                  </div>
+
+                  <div className="text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubmitted(false);
+                        setFormData({ name: '', email: '', phone: '', message: '' });
+                      }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-mono font-bold text-slate-600 hover:text-slate-900 uppercase tracking-wider cursor-pointer"
+                    >
+                      Rédiger un autre message
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -331,21 +455,62 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ profile }) => {
                     {loading ? (
                       <span className="flex items-center gap-2">
                         <span className="w-4 h-4 border-2 border-[#D5A33D] border-t-transparent rounded-full animate-spin" />
-                        Acheminement vers la boîte mail...
+                        Transmission vers votre boîte mail...
                       </span>
                     ) : (
                       <>
                         <Mail className="w-4 h-4 text-[#D5A33D]" />
-                        <span>Envoyer le message directement à ma boîte mail</span>
+                        <span>Envoyer directement dans ma boîte mail</span>
                       </>
                     )}
                   </button>
+
+                  {/* Direct 1-Click Alternate Channels */}
+                  <div className="pt-2 border-t border-slate-100 space-y-2">
+                    <p className="text-[11px] font-mono text-slate-500 text-center">
+                      Ou écrivez-moi directement via votre messagerie préférée :
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      <a
+                        href={getGmailWebUrl()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#102B46] text-xs font-mono font-semibold transition-colors"
+                        title="Ouvrir Gmail web directement"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-[#EA4335]" />
+                        <span>Gmail Web</span>
+                        <ExternalLink className="w-3 h-3 opacity-60" />
+                      </a>
+
+                      <a
+                        href={getWhatsAppUrl()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-mono font-semibold transition-colors"
+                        title="Envoyer un message WhatsApp"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>WhatsApp direct</span>
+                        <ExternalLink className="w-3 h-3 opacity-60" />
+                      </a>
+
+                      <a
+                        href={getMailtoUrl()}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-mono font-semibold transition-colors"
+                        title="Ouvrir votre application e-mail par défaut"
+                      >
+                        <Send className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Client Mail (Outlook / Apple)</span>
+                      </a>
+                    </div>
+                  </div>
 
                   {/* Clarification Note */}
                   <div className="flex items-start gap-2 pt-1 text-[11px] font-mono text-slate-500">
                     <Info className="w-3.5 h-3.5 text-[#D5A33D] shrink-0 mt-0.5" />
                     <span>
-                      Votre message parvient directement dans la boîte mail officielle : <strong>wbemery.plei@univ-thies.sn</strong>.
+                      Adresses de réception : <strong>{recipientEmail}</strong> (Institutionnelle) et <strong>{backupEmail}</strong> (Gmail).
                     </span>
                   </div>
 

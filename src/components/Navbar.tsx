@@ -26,6 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { label: "Mes Projets Terrains", href: "#projets", sectionId: "projets" },
     { label: "Expériences", href: "#experiences", sectionId: "experiences", subTab: 'experiences' as const },
     { label: "Formations", href: "#formations", sectionId: "experiences", subTab: 'formation' as const },
+    { label: "Certifications", href: "#certifications", sectionId: "certifications" },
   ];
 
   const handleScrollTo = (

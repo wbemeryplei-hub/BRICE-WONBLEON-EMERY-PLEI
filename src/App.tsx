@@ -12,6 +12,7 @@ import { AboutSection } from './components/AboutSection';
 import { TechnicalSkillsSection } from './components/TechnicalSkillsSection';
 import { ProjectsSection } from './components/ProjectsSection';
 import { ExperienceTimelineSection } from './components/ExperienceTimelineSection';
+import { CertificationsSection } from './components/CertificationsSection';
 import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { DataCustomizerModal } from './components/DataCustomizerModal';
@@ -20,6 +21,7 @@ import {
   Layers, 
   Briefcase, 
   GraduationCap,
+  Award,
   Home,
   Send
 } from 'lucide-react';
@@ -48,7 +50,7 @@ export default function App() {
   // Track active section on vertical scroll
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ['accueil', 'a-propos', 'competences', 'projets', 'experiences', 'contact'];
+      const sections = ['accueil', 'a-propos', 'competences', 'projets', 'experiences', 'certifications', 'contact'];
       const scrollPosition = window.scrollY + 220;
 
       for (let i = sections.length - 1; i >= 0; i--) {
@@ -69,7 +71,7 @@ export default function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Handle URL hash on initial load (e.g., #formations)
+  // Handle URL hash on initial load (e.g., #formations, #certifications)
   useEffect(() => {
     const hash = window.location.hash.replace('#', '');
     if (!hash) return;
@@ -130,7 +132,12 @@ export default function App() {
           <ExperienceTimelineSection />
         </section>
 
-        {/* SECTION 6 : CONTACT */}
+        {/* SECTION 6 : CERTIFICATIONS (Titres uniquement sans description) */}
+        <section id="certifications" aria-label="Certifications Professionnelles">
+          <CertificationsSection />
+        </section>
+
+        {/* SECTION 7 : CONTACT */}
         <section id="contact" aria-label="Contact et Réseau">
           <ContactSection profile={profile} />
         </section>
@@ -145,7 +152,7 @@ export default function App() {
         aria-label="Navigation rapide mobile" 
         className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-2.5 right-2.5 max-w-md mx-auto z-40 sm:hidden"
       >
-        <div className="bg-[#0A1826]/92 backdrop-blur-2xl border border-white/12 rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.55),0_1px_0_rgba(255,255,255,0.08)_inset] p-1.5 grid grid-cols-6 gap-1 text-white">
+        <div className="bg-[#0A1826]/92 backdrop-blur-2xl border border-white/12 rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.55),0_1px_0_rgba(255,255,255,0.08)_inset] p-1.5 grid grid-cols-7 gap-0.5 sm:gap-1 text-white">
           
           {/* 1. Accueil */}
           <button
@@ -156,10 +163,10 @@ export default function App() {
             }`}
             title="Accueil"
           >
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeSection === 'accueil' ? 'bg-[#D5A33D]/30' : 'bg-white/[0.06]'}`}>
-              <Home className={`w-4 h-4 ${activeSection === 'accueil' ? 'text-[#D5A33D]' : 'text-slate-200'}`} strokeWidth={1.8} />
+            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center ${activeSection === 'accueil' ? 'bg-[#D5A33D]/30' : 'bg-white/[0.06]'}`}>
+              <Home className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeSection === 'accueil' ? 'text-[#D5A33D]' : 'text-slate-200'}`} strokeWidth={1.8} />
             </div>
-            <span className="text-[9px] font-sans font-medium mt-1 truncate w-full text-center tracking-tight">Accueil</span>
+            <span className="text-[8px] sm:text-[9px] font-sans font-medium mt-1 truncate w-full text-center tracking-tight">Accueil</span>
           </button>
 
           {/* 2. À propos */}
@@ -171,10 +178,10 @@ export default function App() {
             }`}
             title="À propos de moi"
           >
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeSection === 'a-propos' ? 'bg-[#D5A33D]/30' : 'bg-white/[0.06]'}`}>
-              <UserRound className={`w-4 h-4 ${activeSection === 'a-propos' ? 'text-[#D5A33D]' : 'text-slate-200'}`} strokeWidth={1.8} />
+            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center ${activeSection === 'a-propos' ? 'bg-[#D5A33D]/30' : 'bg-white/[0.06]'}`}>
+              <UserRound className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeSection === 'a-propos' ? 'text-[#D5A33D]' : 'text-slate-200'}`} strokeWidth={1.8} />
             </div>
-            <span className="text-[9px] font-sans font-medium mt-1 truncate w-full text-center tracking-tight">À propos</span>
+            <span className="text-[8px] sm:text-[9px] font-sans font-medium mt-1 truncate w-full text-center tracking-tight">Profil</span>
           </button>
 
           {/* 3. Logiciels */}
@@ -186,10 +193,10 @@ export default function App() {
             }`}
             title="Compétences logicielles"
           >
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeSection === 'competences' ? 'bg-[#D5A33D]/30' : 'bg-white/[0.06]'}`}>
-              <Layers className={`w-4 h-4 ${activeSection === 'competences' ? 'text-[#D5A33D]' : 'text-slate-200'}`} strokeWidth={1.8} />
+            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center ${activeSection === 'competences' ? 'bg-[#D5A33D]/30' : 'bg-white/[0.06]'}`}>
+              <Layers className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeSection === 'competences' ? 'text-[#D5A33D]' : 'text-slate-200'}`} strokeWidth={1.8} />
             </div>
-            <span className="text-[9px] font-sans font-medium mt-1 truncate w-full text-center tracking-tight">Logiciels</span>
+            <span className="text-[8px] sm:text-[9px] font-sans font-medium mt-1 truncate w-full text-center tracking-tight">Outils</span>
           </button>
 
           {/* 4. Projets */}
@@ -201,10 +208,10 @@ export default function App() {
             }`}
             title="Projets réalisés"
           >
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeSection === 'projets' ? 'bg-[#D5A33D]/30' : 'bg-white/[0.06]'}`}>
-              <Briefcase className={`w-4 h-4 ${activeSection === 'projets' ? 'text-[#D5A33D]' : 'text-slate-200'}`} strokeWidth={1.8} />
+            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center ${activeSection === 'projets' ? 'bg-[#D5A33D]/30' : 'bg-white/[0.06]'}`}>
+              <Briefcase className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeSection === 'projets' ? 'text-[#D5A33D]' : 'text-slate-200'}`} strokeWidth={1.8} />
             </div>
-            <span className="text-[9px] font-sans font-medium mt-1 truncate w-full text-center tracking-tight">Projets</span>
+            <span className="text-[8px] sm:text-[9px] font-sans font-medium mt-1 truncate w-full text-center tracking-tight">Projets</span>
           </button>
 
           {/* 5. Parcours */}
@@ -216,13 +223,28 @@ export default function App() {
             }`}
             title="Expériences et Formations"
           >
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeSection === 'experiences' ? 'bg-[#D5A33D]/30' : 'bg-white/[0.06]'}`}>
-              <GraduationCap className={`w-4 h-4 ${activeSection === 'experiences' ? 'text-[#D5A33D]' : 'text-slate-200'}`} strokeWidth={1.8} />
+            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center ${activeSection === 'experiences' ? 'bg-[#D5A33D]/30' : 'bg-white/[0.06]'}`}>
+              <GraduationCap className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeSection === 'experiences' ? 'text-[#D5A33D]' : 'text-slate-200'}`} strokeWidth={1.8} />
             </div>
-            <span className="text-[9px] font-sans font-medium mt-1 truncate w-full text-center tracking-tight">Parcours</span>
+            <span className="text-[8px] sm:text-[9px] font-sans font-medium mt-1 truncate w-full text-center tracking-tight">Parcours</span>
           </button>
 
-          {/* 6. Contact */}
+          {/* 6. Certifications */}
+          <button
+            type="button"
+            onClick={() => handleScrollTo('certifications')}
+            className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all cursor-pointer ${
+              activeSection === 'certifications' ? 'bg-[#D5A33D]/20 text-[#D5A33D]' : 'hover:bg-white/5 text-slate-300'
+            }`}
+            title="Certifications"
+          >
+            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center ${activeSection === 'certifications' ? 'bg-[#D5A33D]/30' : 'bg-white/[0.06]'}`}>
+              <Award className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeSection === 'certifications' ? 'text-[#D5A33D]' : 'text-slate-200'}`} strokeWidth={1.8} />
+            </div>
+            <span className="text-[8px] sm:text-[9px] font-sans font-medium mt-1 truncate w-full text-center tracking-tight">Certifs</span>
+          </button>
+
+          {/* 7. Contact */}
           <button
             type="button"
             onClick={() => handleScrollTo('contact')}
@@ -231,10 +253,10 @@ export default function App() {
             }`}
             title="Me contacter"
           >
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeSection === 'contact' ? 'bg-[#D5A33D]/30' : 'bg-white/[0.06]'}`}>
-              <Send className={`w-4 h-4 ${activeSection === 'contact' ? 'text-[#D5A33D]' : 'text-slate-200'}`} strokeWidth={1.8} />
+            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center ${activeSection === 'contact' ? 'bg-[#D5A33D]/30' : 'bg-white/[0.06]'}`}>
+              <Send className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeSection === 'contact' ? 'text-[#D5A33D]' : 'text-slate-200'}`} strokeWidth={1.8} />
             </div>
-            <span className="text-[9px] font-sans font-medium mt-1 truncate w-full text-center tracking-tight">Contact</span>
+            <span className="text-[8px] sm:text-[9px] font-sans font-medium mt-1 truncate w-full text-center tracking-tight">Contact</span>
           </button>
 
         </div>
